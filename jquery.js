@@ -1,58 +1,94 @@
 var model = {};
 var view = {};
+var BLANK = '-';
 
 model.board = {
   gameBoard: [
-    ['', '', ''],
-    ['', '', ''],
-    ['', '', '']
+    [BLANK, BLANK, BLANK],
+    [BLANK, BLANK, BLANK],
+    [BLANK, BLANK, BLANK]
   ],
   isGameOver: false,
-  currentPlayer: 'x',
+  currentPlayer: 'X',
   dimensions: 3,
+  xPlayerScore: 0,
+  oPlayerScore: 0,
   calcDims: function () {
     var dims = this.dimensions;
     return $('#xo-board').width() / dims;
   }
 };
 
-model.isGameWon = function () {
-  model.board.gameBoard.forEach(function (row, y) {
-    row.forEach(function (cell, x) {
-      if (model.board.gameBoard[y][x] === 'x' || model.board.gameBoard[y][x] === 'o') {
-        return true;
-      }
-      return false;
+model.clearBoard = function () {
+  model.board.gameBoard.forEach(function (row) {
+    row.forEach(function (cell, index) {
+      row[index] = BLANK;
     });
-    if (model.board.gameBoard[y][y] === 'x' || model.board.gameBoard[y][y] === 'o') {
-      return true;
-    }
-    return false;
   });
 };
 
+model.isGameWon = function () {
+  var board = this.board.gameBoard;
+  function isWin(cell1, cell2, cell3) {
+    if (cell1 === BLANK || cell2 === BLANK || cell3 === BLANK) {
+      return false;
+    } return cell1 === cell2 && cell2 === cell3;
+  }
+  if (isWin(board[0][0], board[0][1], board[0][2])) {
+    return true;
+  } else if (isWin(board[0][0], board[1][0], board[2][0])) {
+    return true;
+  } else if (isWin(board[0][0], board[1][1], board[2][2])) {
+    return true;
+  } else if (isWin(board[1][0], board[1][1], board[1][2])) {
+    return true;
+  } else if (isWin(board[0][2], board[1][1], board[2][0])) {
+    return true;
+  } else if (isWin(board[2][0], board[2][1], board[2][2])) {
+    return true;
+  } else if (isWin(board[0][1], board[1][1], board[2][1])) {
+    return true;
+  } else if (isWin(board[0][2], board[1][2], board[2][2])) {
+    return true;
+  }
+  return false;
+};
+
+model.addScore = function (player) {
+  if (player === 'X') {
+    model.board.xPlayerScore += 1;
+  } else if (player === 'O') {
+    model.board.oPlayerScore += 1;
+  }
+};
+
 model.tick = function (x, y) {
-  if (model.board.currentPlayer === 'x' && model.board.gameBoard[y][x] === '') {
+  if (model.board.currentPlayer === 'X' && model.board.gameBoard[y][x] === BLANK) {
     model.board.gameBoard[y][x] = 'x';
     model.changePlayer();
-  } else if (model.board.currentPlayer === 'o' && model.board.gameBoard[y][x] === '') {
+  } else if (model.board.currentPlayer === 'O' && model.board.gameBoard[y][x] === BLANK) {
     model.board.gameBoard[y][x] = 'o';
     model.changePlayer();
   }
 
   if (model.isGameWon()) {
     model.board.isGameOver = true;
+    model.changePlayer();
+    model.addScore(model.board.currentPlayer);
+    $('#xo-board').off();
+    view.newRoundListener();
+    view.drawGameOver(model.board.currentPlayer);
   }
   view.render();
 };
 
 model.changePlayer = function () {
-  if (model.board.currentPlayer === 'x') {
-    model.board.currentPlayer = 'o';
-  } else if (model.board.currentPlayer === 'o') {
-    model.board.currentPlayer = 'x';
+  if (model.board.currentPlayer === 'X') {
+    model.board.currentPlayer = 'O';
+  } else if (model.board.currentPlayer === 'O') {
+    model.board.currentPlayer = 'X';
   } else if (model.board.isGameOver) {
-    model.board.currentPlayer = '';
+    model.board.currentPlayer = model.board.currentPlayer;
   }
 };
 
@@ -86,6 +122,34 @@ view.clickListener = function () {
   });
 };
 
+view.newRoundListener = function () {
+  var newRound = function () {
+    model.clearBoard();
+    model.changePlayer();
+    model.board.isGameOver = false;
+    view.render();
+    view.clickListener();
+  };
+  $('#btn').on('click', newRound);
+};
+
+view.drawNewGameBtn = function () {
+  if (model.board.isGameOver) {
+    $('.section').append('<button id="btn" class="is-info button xcentered">New Round</button>');
+  } else {
+    $('#btn').remove();
+  }
+};
+
+view.drawGameOver = function (player) {
+  $('.title').html('Player ' + player + ' has won.');
+};
+
+view.drawScores = function () {
+  $('#xscore').html('X: ' + model.board.xPlayerScore);
+  $('#oscore').html('O: ' + model.board.oPlayerScore);
+};
+
 view.removeBorderOutline = function () {
   $('#0_0').css({ 'border-top': '0', 'border-left': '0' });
   $('#1_0').css({ 'border-top': '0' });
@@ -109,9 +173,13 @@ view.render = function () {
       }
     }
   }
+  if (model.board.isGameOver) {
+    view.drawNewGameBtn();
+  }
 };
 
 $(document).ready(function () {
   view.drawBoard();
+  view.drawScores();
   view.clickListener();
 });
