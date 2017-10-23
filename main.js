@@ -1,106 +1,108 @@
-var model = {};
+var model;
 var view = {};
 var handlers = {};
 var BLANK = '-';
 var X_TOKEN = 'X';
 var O_TOKEN = 'O';
 
-model.state = {
-  gameBoard: [
+model = (function () {
+  var state = {
+    gameBoard: [
     [BLANK, BLANK, BLANK],
     [BLANK, BLANK, BLANK],
     [BLANK, BLANK, BLANK]
-  ],
-  isWon: false,
-  isDraw: false,
-  currentPlayer: X_TOKEN,
-  dimensions: 3,
-  xPlayerScore: 0,
-  oPlayerScore: 0
-};
+    ],
+    isWon: false,
+    isDraw: false,
+    currentPlayer: X_TOKEN,
+    dimensions: 3,
+    xPlayerScore: 0,
+    oPlayerScore: 0
+  };
+  var isGameWon = function () {
+    var b = state.gameBoard;
+    function isWin(cell1, cell2, cell3) {
+      if (cell1 === BLANK || cell2 === BLANK || cell3 === BLANK) {
+        return false;
+      }
+      return cell1 === cell2 && cell2 === cell3;
+    }
 
-model.clearBoard = function () {
-  model.state.gameBoard.forEach(function (row) {
-    row.forEach(function (cell, index) {
-      row[index] = BLANK;
+    return isWin(b[0][0], b[0][1], b[0][2]) ||
+      isWin(b[0][0], b[1][0], b[2][0]) ||
+      isWin(b[0][0], b[1][1], b[2][2]) ||
+      isWin(b[1][0], b[1][1], b[1][2]) ||
+      isWin(b[0][2], b[1][1], b[2][0]) ||
+      isWin(b[2][0], b[2][1], b[2][2]) ||
+      isWin(b[0][1], b[1][1], b[2][1]) ||
+      isWin(b[0][2], b[1][2], b[2][2]);
+  };
+  var clearBoard = function () {
+    state.gameBoard.forEach(function (row) {
+      row.forEach(function (cell, index) {
+        row[index] = BLANK;
+      });
     });
-  });
-};
-
-model.resetBoard = function () {
-  model.clearBoard();
-  model.state.isWon = false;
-  model.state.isDraw = false;
-};
-
-model.isGameWon = function () {
-  var b = this.state.gameBoard;
-  function isWin(cell1, cell2, cell3) {
-    if (cell1 === BLANK || cell2 === BLANK || cell3 === BLANK) {
-      return false;
+  };
+  var noBlanksLeft = function () {
+    function flatten(grid) {
+      return grid.reduce(function (acc, row) {
+        return acc.concat(row);
+      }, []);
     }
-    return cell1 === cell2 && cell2 === cell3;
-  }
+    return flatten(state.gameBoard)
+      .filter(function (cell) {
+        return cell === BLANK;
+      }).length === 0;
+  };
+  var tick = function (x, y) {
+    var addScore = function (player) {
+      if (player === X_TOKEN) {
+        state.xPlayerScore += 1;
+      } else if (player === O_TOKEN) {
+        state.oPlayerScore += 1;
+      } else {
+        throw new Error(player + ' is not a valid player');
+      }
+    };
+    var changePlayer = function () {
+      if (state.currentPlayer === X_TOKEN) {
+        state.currentPlayer = O_TOKEN;
+      } else if (state.currentPlayer === O_TOKEN) {
+        state.currentPlayer = X_TOKEN;
+      } else {
+        throw new Error('Invalid player');
+      }
+    };
 
-  return isWin(b[0][0], b[0][1], b[0][2]) ||
-    isWin(b[0][0], b[1][0], b[2][0]) ||
-    isWin(b[0][0], b[1][1], b[2][2]) ||
-    isWin(b[1][0], b[1][1], b[1][2]) ||
-    isWin(b[0][2], b[1][1], b[2][0]) ||
-    isWin(b[2][0], b[2][1], b[2][2]) ||
-    isWin(b[0][1], b[1][1], b[2][1]) ||
-    isWin(b[0][2], b[1][2], b[2][2]);
-};
-
-model.noBlanksLeft = function () {
-  function flatten(grid) {
-    return grid.reduce(function (acc, row) {
-      return acc.concat(row);
-    }, []);
-  }
-  return flatten(model.state.gameBoard)
-    .filter(function (cell) {
-      return cell === BLANK;
-    }).length === 0;
-};
-
-model.tick = function (x, y) {
-  var addScore = function (player) {
-    if (player === 'X') {
-      model.state.xPlayerScore += 1;
-    } else if (player === 'O') {
-      model.state.oPlayerScore += 1;
+    if (state.currentPlayer === X_TOKEN) {
+      state.gameBoard[y][x] = 'x';
+    } else if (state.currentPlayer === O_TOKEN) {
+      state.gameBoard[y][x] = 'o';
     } else {
-      throw new Error(player + ' is not a valid player');
+      throw new Error('Invalid player move');
     }
+
+    if (isGameWon()) {
+      state.isWon = true;
+      addScore(state.currentPlayer);
+    } else if (noBlanksLeft()) {
+      state.isDraw = true;
+    }
+    changePlayer();
+  };
+  var resetBoard = function () {
+    clearBoard();
+    state.isWon = false;
+    state.isDraw = false;
   };
 
-  var changePlayer = function () {
-    if (model.state.currentPlayer === X_TOKEN) {
-      model.state.currentPlayer = O_TOKEN;
-    } else if (model.state.currentPlayer === O_TOKEN) {
-      model.state.currentPlayer = X_TOKEN;
-    } else {
-      throw new Error('Invalid player name');
-    }
+  return {
+    state: state,
+    tick: tick,
+    resetBoard: resetBoard
   };
-
-  if (model.state.currentPlayer === X_TOKEN) {
-    model.state.gameBoard[y][x] = 'x';
-  } else if (model.state.currentPlayer === O_TOKEN) {
-    model.state.gameBoard[y][x] = 'o';
-  } else {
-    throw new Error('Invalid player');
-  }
-
-  if (model.isGameWon()) {
-    model.state.isWon = true;
-    addScore(model.state.currentPlayer);
-  } else if (model.noBlanksLeft()) {
-    model.state.isDraw = true;
-  }
-  changePlayer();
-};
+}());
 
 view.drawBoard = function () {
   var x;
@@ -183,7 +185,9 @@ handlers.clickListener = function () {
   $('#xo-board').on('click', '.cell', function () {
     var xIndex;
     var yIndex;
-    if ($(this).html() !== X_TOKEN && $(this).html() !== O_TOKEN) {
+    var isDraw = model.state.isDraw;
+    var isWon = model.state.isWon;
+    if ($(this).html() !== X_TOKEN && $(this).html() !== O_TOKEN && !isWon) {
       xIndex = parseInt($(this).attr('id').split('').shift(), 10);
       yIndex = parseInt($(this).attr('id').split('').pop(), 10);
       model.tick(xIndex, yIndex);
