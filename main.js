@@ -185,7 +185,6 @@ handlers.clickListener = function () {
   $('#xo-board').on('click', '.cell', function () {
     var xIndex;
     var yIndex;
-    var isDraw = model.state.isDraw;
     var isWon = model.state.isWon;
     if ($(this).html() !== X_TOKEN && $(this).html() !== O_TOKEN && !isWon) {
       xIndex = parseInt($(this).attr('id').split('').shift(), 10);
