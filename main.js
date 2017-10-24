@@ -1,5 +1,5 @@
 var model;
-var view = {};
+var view;
 var handlers = {};
 var BLANK = '-';
 var X_TOKEN = 'X';
@@ -19,6 +19,7 @@ model = (function () {
     xPlayerScore: 0,
     oPlayerScore: 0
   };
+
   var isGameWon = function () {
     var b = state.gameBoard;
     function isWin(cell1, cell2, cell3) {
@@ -37,6 +38,7 @@ model = (function () {
       isWin(b[0][1], b[1][1], b[2][1]) ||
       isWin(b[0][2], b[1][2], b[2][2]);
   };
+
   var clearBoard = function () {
     state.gameBoard.forEach(function (row) {
       row.forEach(function (cell, index) {
@@ -44,6 +46,7 @@ model = (function () {
       });
     });
   };
+
   var noBlanksLeft = function () {
     function flatten(grid) {
       return grid.reduce(function (acc, row) {
@@ -55,6 +58,7 @@ model = (function () {
         return cell === BLANK;
       }).length === 0;
   };
+
   var tick = function (x, y) {
     var addScore = function (player) {
       if (player === X_TOKEN) {
@@ -65,6 +69,7 @@ model = (function () {
         throw new Error(player + ' is not a valid player');
       }
     };
+
     var changePlayer = function () {
       if (state.currentPlayer === X_TOKEN) {
         state.currentPlayer = O_TOKEN;
@@ -91,6 +96,7 @@ model = (function () {
     }
     changePlayer();
   };
+
   var resetBoard = function () {
     clearBoard();
     state.isWon = false;
@@ -104,82 +110,93 @@ model = (function () {
   };
 }());
 
-view.drawBoard = function () {
-  var x;
-  var y;
-  var $board = $('#xo-board');
-  var cell;
-  var dims = model.state.dimensions;
-  var cellLength = $board.width() / dims;
-  var $cells = $(document.createDocumentFragment());
-  var removeBorderOutline = function () {
-    $('#0_0').css({ 'border-top': '0', 'border-left': '0' });
-    $('#1_0').css({ 'border-top': '0' });
-    $('#2_0').css({ 'border-top': '0', 'border-right': '0' });
-    $('#0_1').css({ 'border-left': '0' });
-    $('#2_1').css({ 'border-right': '0' });
-    $('#0_2').css({ 'border-left': '0', 'border-bottom': '0' });
-    $('#1_2').css({ 'border-bottom': '0' });
-    $('#2_2').css({ 'border-bottom': '0', 'border-right': '0' });
+view = (function () {
+  var drawScores = function () {
+    $('#xscore').html('X: ' + model.state.xPlayerScore);
+    $('#oscore').html('O: ' + model.state.oPlayerScore);
   };
 
-  for (y = 0; y < dims; y += 1) {
-    for (x = 0; x < dims; x += 1) {
-      cell = $('<div class="cell has-text-centered"></div>');
-      cell.width(cellLength);
-      cell.height(cellLength);
-      cell.attr('id', x + '_' + y);
-      $cells.append(cell);
-    }
-  }
-  $board.append($cells);
-  removeBorderOutline();
-};
+  var drawBoard = function () {
+    var x;
+    var y;
+    var $board = $('#xo-board');
+    var cell;
+    var dims = model.state.dimensions;
+    var cellLength = $board.width() / dims;
+    var $cells = $(document.createDocumentFragment());
 
-view.drawNewGameBtn = function () {
-  $('.section').append('<button id="btn" class="is-info button xcentered">New Round</button>');
-};
+    var removeBorderOutline = function () {
+      $('#0_0').css({ 'border-top': '0', 'border-left': '0' });
+      $('#1_0').css({ 'border-top': '0' });
+      $('#2_0').css({ 'border-top': '0', 'border-right': '0' });
+      $('#0_1').css({ 'border-left': '0' });
+      $('#2_1').css({ 'border-right': '0' });
+      $('#0_2').css({ 'border-left': '0', 'border-bottom': '0' });
+      $('#1_2').css({ 'border-bottom': '0' });
+      $('#2_2').css({ 'border-bottom': '0', 'border-right': '0' });
+    };
 
-view.drawTitle = function () {
-  $('.title').html('X/O');
-};
+    var drawNewGameBtn = function () {
+      $('.section').append('<button id="btn" class="is-info button xcentered">New Round</button>');
+    };
 
-view.drawGameOver = function (player) {
-  var prevPlayer;
-  var $title = $('.title');
-  if (model.state.isDraw) {
-    $title.html('Game was a draw');
-  } else if (model.state.isWon) {
-    prevPlayer = player === X_TOKEN ? O_TOKEN : X_TOKEN;
-    $title.html('Player ' + prevPlayer + ' has won.');
-  }
-};
-
-view.drawScores = function () {
-  $('#xscore').html('X: ' + model.state.xPlayerScore);
-  $('#oscore').html('O: ' + model.state.oPlayerScore);
-};
-
-view.render = function () {
-  var x;
-  var y;
-  for (y = 0; y < model.state.dimensions; y += 1) {
-    for (x = 0; x < model.state.dimensions; x += 1) {
-      if (model.state.gameBoard[y][x] === 'x') {
-        $('#' + x + '_' + y).html(X_TOKEN);
-      } else if (model.state.gameBoard[y][x] === 'o') {
-        $('#' + x + '_' + y).html(O_TOKEN);
-      } else {
-        $('#' + x + '_' + y).html('');
+    for (y = 0; y < dims; y += 1) {
+      for (x = 0; x < dims; x += 1) {
+        cell = $('<div class="cell has-text-centered"></div>');
+        cell.width(cellLength);
+        cell.height(cellLength);
+        cell.attr('id', x + '_' + y);
+        $cells.append(cell);
       }
     }
-  }
-  this.drawScores();
+    $board.append($cells);
+    removeBorderOutline();
+    drawNewGameBtn();
+    drawScores();
+  };
 
-  if (model.state.isWon || model.state.isDraw) {
-    view.drawGameOver(model.state.currentPlayer);
-  }
-};
+  var drawTitle = function () {
+    $('.title').html('X/O');
+  };
+
+  var drawGameOver = function (player) {
+    var prevPlayer;
+    var $title = $('.title');
+    if (model.state.isDraw) {
+      $title.html('Game was a draw');
+    } else if (model.state.isWon) {
+      prevPlayer = player === X_TOKEN ? O_TOKEN : X_TOKEN;
+      $title.html('Player ' + prevPlayer + ' has won.');
+    }
+  };
+
+  var render = function () {
+    var x;
+    var y;
+    for (y = 0; y < model.state.dimensions; y += 1) {
+      for (x = 0; x < model.state.dimensions; x += 1) {
+        if (model.state.gameBoard[y][x] === 'x') {
+          $('#' + x + '_' + y).html(X_TOKEN);
+        } else if (model.state.gameBoard[y][x] === 'o') {
+          $('#' + x + '_' + y).html(O_TOKEN);
+        } else {
+          $('#' + x + '_' + y).html('');
+        }
+      }
+    }
+    drawScores();
+
+    if (model.state.isWon || model.state.isDraw) {
+      drawGameOver(model.state.currentPlayer);
+    }
+  };
+
+  return {
+    render: render,
+    drawBoard: drawBoard,
+    drawTitle: drawTitle
+  };
+}());
 
 handlers.clickListener = function () {
   $('#xo-board').on('click', '.cell', function () {
@@ -207,8 +224,6 @@ handlers.newRoundListener = function () {
 handlers.init = function () {
   model.resetBoard();
   view.drawBoard();
-  view.drawScores();
-  view.drawNewGameBtn();
   this.clickListener();
   this.newRoundListener();
 };
